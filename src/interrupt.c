@@ -1,9 +1,13 @@
+#include "interrupt.h"
 #include <termios.h>
-#include <stdio.h>
-#include <signal.h>
-#include <stdbool.h>
 
 struct termios _base_termios;
+struct keypress_handlers _kh = {
+	null_keypress_handler,
+	null_keypress_handler,
+	null_keypress_handler,
+	null_keypress_handler
+};
 
 void termios_no_return () {
 	struct termios info;
@@ -22,41 +26,33 @@ void initialize_base_termios () {
 	tcgetattr(0, &_base_termios);
 }
 
-struct keypress_handlers {
-	void (*w)();
-	void (*a)();
-	void (*s)();
-	void (*d)();
-};
-
 void null_keypress_handler () {
-	printf("Unhandled keypress!\n");
+	printf("\nUnhandled keypress!\n");
 }
 
-int main (int argc, char** argv) {
-	struct keypress_handlers kh = {
-		null_keypress_handler,
-		null_keypress_handler,
-		null_keypress_handler,
-		null_keypress_handler
-	};
+void set_keypress_handlers (struct keypress_handlers kh) {
+	_kh = kh;
+}
 
+struct keypress_handlers get_keypress_handlers () {
+	return _kh;
+}
+
+int begin_loop () {
 	initialize_base_termios();
 	termios_no_return();
 
 	while (true) {
-		printf("Press any key to continue...\n");
 		switch (getchar()) {
-			case 'w': kh.w(); break;
-			case 'a': kh.a(); break;
-			case 's': kh.s(); break;
-			case 'd': kh.d(); break;
+			case 'w': _kh.w(); break;
+			case 'a': _kh.a(); break;
+			case 's': _kh.s(); break;
+			case 'd': _kh.d(); break;
+			default : null_keypress_handler(); break;
 		}
 	}
 
 	reset_termios();
-	printf("Try now...\n");
-	getchar();
 
 	return 0;
 }
